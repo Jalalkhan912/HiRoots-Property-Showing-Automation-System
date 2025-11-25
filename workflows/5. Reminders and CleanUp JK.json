@@ -1,0 +1,1969 @@
+{
+  "name": "5. Reminders and CleanUp JK",
+  "nodes": [
+    {
+      "parameters": {
+        "content": "## Cleanup\n### Delete all Tally forms > 14 days.\n",
+        "height": 304,
+        "width": 960
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        1152,
+        96
+      ],
+      "id": "f38f2981-84e2-4a23-9250-e02fe6834d82",
+      "name": "Sticky Note"
+    },
+    {
+      "parameters": {
+        "url": "https://api.tally.so/forms",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer tly-lB7jTJNao8C5x63mC7TSeOy4F1VQEnwr"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1344,
+        208
+      ],
+      "id": "9510c396-0835-4208-be29-c86774ce3704",
+      "name": "Get All Forms"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Input data from previous node\nconst forms = $json[\"items\"];\n\n// Map the array to return only `id` and `createdAt`\nconst result = forms.map(form => ({\n  id: form.id,\n  createdAt: form.createdAt\n}));\n\n// Return the result\nreturn result;\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1536,
+        208
+      ],
+      "id": "3b50e720-e3f4-4622-8bea-d91d56d5ec55",
+      "name": "Split items and get ids"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "55e6ffad-2584-441f-b81e-feb428630be0",
+              "leftValue": "={{ $json.createdAt }}",
+              "rightValue": "={{ $now.minus(14, 'days') }}",
+              "operator": {
+                "type": "dateTime",
+                "operation": "before"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.filter",
+      "typeVersion": 2.2,
+      "position": [
+        1728,
+        208
+      ],
+      "id": "815681b1-5f2a-44df-ba4a-6a5f5d75ae93",
+      "name": "keep only > 14 days"
+    },
+    {
+      "parameters": {
+        "method": "DELETE",
+        "url": "=https://api.tally.so/forms/{{ $json.id }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer tly-lB7jTJNao8C5x63mC7TSeOy4F1VQEnwr"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1920,
+        208
+      ],
+      "id": "48ab70a3-5f4e-48d1-9397-213597893d68",
+      "name": "Delete forms > 14 days"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "0bbb0dd6-4cfb-4707-a2ff-bc376df01e12",
+              "leftValue": "={{ $json['Last Update'] }}",
+              "rightValue": "={{ $now.minus(1, 'minutes') }}",
+              "operator": {
+                "type": "dateTime",
+                "operation": "before"
+              }
+            },
+            {
+              "id": "6e530665-be41-4b6b-a58b-e4e6aa5a5158",
+              "leftValue": "={{ $json['Owner/Tenant Number of Reminders'] }}",
+              "rightValue": 2,
+              "operator": {
+                "type": "number",
+                "operation": "lt"
+              }
+            },
+            {
+              "id": "002d53bd-b404-470c-a327-2797cc3ed5ca",
+              "leftValue": "={{ $json['Owner/Tenant Form URL'] }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty",
+                "singleValue": true
+              }
+            },
+            {
+              "id": "85a8af3a-e570-4536-88ae-0b7a95fc74d8",
+              "leftValue": "={{ $json['Owner/Tenant Form Submitted?'] }}",
+              "rightValue": "No",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "looseTypeValidation": true,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.filter",
+      "typeVersion": 2.2,
+      "position": [
+        272,
+        208
+      ],
+      "id": "6f59166c-f926-4377-a1d8-1587e8ee917f",
+      "name": "Filter2"
+    },
+    {
+      "parameters": {
+        "operation": "search",
+        "base": {
+          "__rl": true,
+          "value": "appGTg9zRscVueZ7q",
+          "mode": "list",
+          "cachedResultName": "HiRoots",
+          "cachedResultUrl": "https://airtable.com/appGTg9zRscVueZ7q"
+        },
+        "table": {
+          "__rl": true,
+          "value": "tbl7IQ2nKJa8x1fTx",
+          "mode": "list",
+          "cachedResultName": "owners/tenants",
+          "cachedResultUrl": "https://airtable.com/appGTg9zRscVueZ7q/tbl7IQ2nKJa8x1fTx"
+        },
+        "filterByFormula": "={phone} = '{{ $json['Owner/Tenant Number'] }}'",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.airtable",
+      "typeVersion": 2.1,
+      "position": [
+        656,
+        208
+      ],
+      "id": "bc0900e7-0dfb-4bc2-b741-9d23b44ef240",
+      "name": "Search records2",
+      "credentials": {
+        "airtableTokenApi": {
+          "id": "BlkmNjoewDVayQOR",
+          "name": "Testing"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://services.leadconnectorhq.com/conversations/messages",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer pit-c2fc64d0-97c6-4fce-b45b-64dbda835e08"
+            },
+            {
+              "name": "Version",
+              "value": "2021-04-15"
+            },
+            {
+              "name": "Accept",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "type",
+              "value": "SMS"
+            },
+            {
+              "name": "message",
+              "value": "=This is the Reminder No:{{ $('Loop Over Items3').item.json['Owner/Tenant Number of Reminders'] + 1}} to fill the below form.\nThis is the Form Link for selecting time slots.\n{{ $('Loop Over Items3').item.json['Owner/Tenant Form URL'] }}"
+            },
+            {
+              "name": "contactId",
+              "value": "={{ $json.contact_id }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        816,
+        208
+      ],
+      "id": "fc202d7a-715e-47ec-ac85-0a4beac8137c",
+      "name": "Owner/Tenant Reminder Sent"
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "base": {
+          "__rl": true,
+          "value": "appGTg9zRscVueZ7q",
+          "mode": "list",
+          "cachedResultName": "HiRoots",
+          "cachedResultUrl": "https://airtable.com/appGTg9zRscVueZ7q"
+        },
+        "table": {
+          "__rl": true,
+          "value": "tblIVTULdzLxlOVV7",
+          "mode": "list",
+          "cachedResultName": "Leads",
+          "cachedResultUrl": "https://airtable.com/appGTg9zRscVueZ7q/tblIVTULdzLxlOVV7"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "id": "={{ $('Loop Over Items3').item.json.id }}",
+            "Owner/Tenant Number of Reminders": "={{ $('Loop Over Items3').item.json['Owner/Tenant Number of Reminders'] + 1 }}"
+          },
+          "matchingColumns": [
+            "id"
+          ],
+          "schema": [
+            {
+              "id": "id",
+              "displayName": "id",
+              "required": false,
+              "defaultMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": true,
+              "removed": false
+            },
+            {
+              "id": "ID",
+              "displayName": "ID",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "First Name",
+              "displayName": "First Name",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Last Name",
+              "displayName": "Last Name",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Phone Number",
+              "displayName": "Phone Number",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Email",
+              "displayName": "Email",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Income",
+              "displayName": "Income",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "number",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Credit Score",
+              "displayName": "Credit Score",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "number",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Has Pets",
+              "displayName": "Has Pets",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Selected Property",
+              "displayName": "Selected Property",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Move In Date",
+              "displayName": "Move In Date",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Status",
+              "displayName": "Status",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "options",
+              "options": [
+                {
+                  "name": "Qualified",
+                  "value": "Qualified"
+                },
+                {
+                  "name": "Not Qualified",
+                  "value": "Not Qualified"
+                }
+              ],
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Rejection Reason",
+              "displayName": "Rejection Reason",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "options",
+              "options": [
+                {
+                  "name": "Pets",
+                  "value": "Pets"
+                },
+                {
+                  "name": "Credits",
+                  "value": "Credits"
+                },
+                {
+                  "name": "Income",
+                  "value": "Income"
+                },
+                {
+                  "name": "Availability",
+                  "value": "Availability"
+                },
+                {
+                  "name": "Non",
+                  "value": "Non"
+                }
+              ],
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "LEAD Form URL",
+              "displayName": "LEAD Form URL",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "LEAD Form Submitted?",
+              "displayName": "LEAD Form Submitted?",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "options",
+              "options": [
+                {
+                  "name": "Yes",
+                  "value": "Yes"
+                },
+                {
+                  "name": "No",
+                  "value": "No"
+                }
+              ],
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "LEAD Form Data",
+              "displayName": "LEAD Form Data",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "LEAD Number of Reminders",
+              "displayName": "LEAD Number of Reminders",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "number",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Owner/Tenant Form URL",
+              "displayName": "Owner/Tenant Form URL",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Owner/Tenant Form Submitted?",
+              "displayName": "Owner/Tenant Form Submitted?",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "options",
+              "options": [
+                {
+                  "name": "Yes",
+                  "value": "Yes"
+                },
+                {
+                  "name": "No",
+                  "value": "No"
+                }
+              ],
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Owner/Tenant Form Data",
+              "displayName": "Owner/Tenant Form Data",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Owner/Tenant Number of Reminders",
+              "displayName": "Owner/Tenant Number of Reminders",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "number",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Agent Form URL",
+              "displayName": "Agent Form URL",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Agent Form Submitted?",
+              "displayName": "Agent Form Submitted?",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "options",
+              "options": [
+                {
+                  "name": "Yes",
+                  "value": "Yes"
+                },
+                {
+                  "name": "No",
+                  "value": "No"
+                }
+              ],
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Agent Form Data",
+              "displayName": "Agent Form Data",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Agent Number of Reminders",
+              "displayName": "Agent Number of Reminders",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "number",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Owner/Tenant Name",
+              "displayName": "Owner/Tenant Name",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Owner/Tenant Number",
+              "displayName": "Owner/Tenant Number",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Assigned Agent Number",
+              "displayName": "Assigned Agent Number",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Appointment Booked",
+              "displayName": "Appointment Booked",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "options",
+              "options": [
+                {
+                  "name": "Yes",
+                  "value": "Yes"
+                },
+                {
+                  "name": "No",
+                  "value": "No"
+                }
+              ],
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Last Update",
+              "displayName": "Last Update",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": true,
+              "removed": true
+            },
+            {
+              "id": "Created Time",
+              "displayName": "Created Time",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": true,
+              "removed": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.airtable",
+      "typeVersion": 2.1,
+      "position": [
+        976,
+        208
+      ],
+      "id": "6d325523-8727-4567-8340-6c8c6aff02eb",
+      "name": "Increment No.of Reminders",
+      "credentials": {
+        "airtableTokenApi": {
+          "id": "BlkmNjoewDVayQOR",
+          "name": "Testing"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {}
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        1184,
+        208
+      ],
+      "id": "62dd3359-6bd5-4707-b6a6-a0a1eab5b92e",
+      "name": "Every Day"
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "hours",
+              "hoursInterval": 12
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        -16,
+        208
+      ],
+      "id": "2dae5dcc-9c1a-42bf-b0c5-76cf260e7944",
+      "name": "Every 12 Hours"
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "hours",
+              "hoursInterval": 3
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        -16,
+        528
+      ],
+      "id": "c7a48974-1bbb-4aa5-9e38-b8b037dd2dc3",
+      "name": "Every 3 Hours"
+    },
+    {
+      "parameters": {
+        "operation": "search",
+        "base": {
+          "__rl": true,
+          "value": "appGTg9zRscVueZ7q",
+          "mode": "list",
+          "cachedResultName": "HiRoots",
+          "cachedResultUrl": "https://airtable.com/appGTg9zRscVueZ7q"
+        },
+        "table": {
+          "__rl": true,
+          "value": "tblIVTULdzLxlOVV7",
+          "mode": "list",
+          "cachedResultName": "Leads",
+          "cachedResultUrl": "https://airtable.com/appGTg9zRscVueZ7q/tblIVTULdzLxlOVV7"
+        },
+        "filterByFormula": "{Status} = 'Qualified'",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.airtable",
+      "typeVersion": 2.1,
+      "position": [
+        144,
+        208
+      ],
+      "id": "eaa45ff0-c471-4f45-9b85-6f72416c0333",
+      "name": "Get All Qualified Records",
+      "credentials": {
+        "airtableTokenApi": {
+          "id": "BlkmNjoewDVayQOR",
+          "name": "Testing"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "search",
+        "base": {
+          "__rl": true,
+          "value": "appGTg9zRscVueZ7q",
+          "mode": "list",
+          "cachedResultName": "HiRoots",
+          "cachedResultUrl": "https://airtable.com/appGTg9zRscVueZ7q"
+        },
+        "table": {
+          "__rl": true,
+          "value": "tblIVTULdzLxlOVV7",
+          "mode": "list",
+          "cachedResultName": "Leads",
+          "cachedResultUrl": "https://airtable.com/appGTg9zRscVueZ7q/tblIVTULdzLxlOVV7"
+        },
+        "filterByFormula": "{Status} = 'Qualified'",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.airtable",
+      "typeVersion": 2.1,
+      "position": [
+        128,
+        528
+      ],
+      "id": "7b71044a-29e1-4f40-9f73-2e1131928695",
+      "name": "Get All Qualified Records2",
+      "credentials": {
+        "airtableTokenApi": {
+          "id": "BlkmNjoewDVayQOR",
+          "name": "Testing"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "0bbb0dd6-4cfb-4707-a2ff-bc376df01e12",
+              "leftValue": "={{ $json['Last Update'] }}",
+              "rightValue": "={{ $now.minus(3, 'hours') }}",
+              "operator": {
+                "type": "dateTime",
+                "operation": "before"
+              }
+            },
+            {
+              "id": "6e530665-be41-4b6b-a58b-e4e6aa5a5158",
+              "leftValue": "={{ $json['Agent Number of Reminders'] }}",
+              "rightValue": 8,
+              "operator": {
+                "type": "number",
+                "operation": "lt"
+              }
+            },
+            {
+              "id": "6bebfbf7-ba9d-4080-8eb1-c7b5dc675fe8",
+              "leftValue": "={{ $json['Agent Form URL'] }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty",
+                "singleValue": true
+              }
+            },
+            {
+              "id": "f134d220-f242-45db-9ebd-9ec160fe5a48",
+              "leftValue": "={{ $json['Agent Form Submitted?'] }}",
+              "rightValue": "No",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "looseTypeValidation": true,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.filter",
+      "typeVersion": 2.2,
+      "position": [
+        272,
+        528
+      ],
+      "id": "d647b9f9-db21-4965-bdd9-e9bcf834bde7",
+      "name": "Filter3"
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "18rDR1m1bZkntndwegrcKgBZCB8RhQnOLBHxTdTDXfS4",
+          "mode": "list",
+          "cachedResultName": "AVAILABLE RENTALS",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/18rDR1m1bZkntndwegrcKgBZCB8RhQnOLBHxTdTDXfS4/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 1418192204,
+          "mode": "list",
+          "cachedResultName": "Current Listings",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/18rDR1m1bZkntndwegrcKgBZCB8RhQnOLBHxTdTDXfS4/edit#gid=1418192204"
+        },
+        "filtersUI": {
+          "values": [
+            {
+              "lookupColumn": "Property Address",
+              "lookupValue": "={{ $json['Selected Property'] }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        656,
+        528
+      ],
+      "id": "30e05fe6-e575-4862-8ddf-008ae0b7622d",
+      "name": "Get row(s) in sheet4",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "KohAZaXjXOFH8DGH",
+          "name": "Google Sheets Sean"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "16001601-667a-405c-a045-5811974375d4",
+              "name": "Showing Agents",
+              "value": "={{ $json['Showing Agents'] }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        832,
+        528
+      ],
+      "id": "f7a36eff-45b5-44eb-a1f4-208b33c21ee2",
+      "name": "Get Agents Contact4"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Showing Agents: {{ $json['Showing Agents'] }}",
+        "hasOutputParser": true,
+        "options": {
+          "systemMessage": "You are a helpful assistant in Extracting and returning the name and phone number of every showing Agents given as input in structured format.\nImportant: The phone numbers format will be this \"808-218-9054\""
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 2.2,
+      "position": [
+        992,
+        528
+      ],
+      "id": "c1cd5ee2-4727-47ef-a154-00fb89a17989",
+      "name": "AI Agent5"
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "mode": "list",
+          "value": "gpt-4.1-mini"
+        },
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        976,
+        704
+      ],
+      "id": "0bfac8bd-87e3-438b-affe-dafbd8821cf6",
+      "name": "OpenAI Chat Model5",
+      "credentials": {
+        "openAiApi": {
+          "id": "Ffo6HqGpSX8PJ9pt",
+          "name": "MindShift OpenAI"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsonSchemaExample": "[\n  {\n\t\"firstname\": \"Jhone\",\n    \"phone\": \"808-218-9054\"\n},\n  {\n\t\"firstname\": \"Jalal\",\n    \"phone\": \"808-218-1234\"\n}\n]"
+      },
+      "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+      "typeVersion": 1.3,
+      "position": [
+        1152,
+        704
+      ],
+      "id": "4cc6388c-21ab-4c7a-88c2-2ee6f702484a",
+      "name": "Structured Output Parser4"
+    },
+    {
+      "parameters": {
+        "operation": "search",
+        "base": {
+          "__rl": true,
+          "value": "appGTg9zRscVueZ7q",
+          "mode": "list",
+          "cachedResultName": "HiRoots",
+          "cachedResultUrl": "https://airtable.com/appGTg9zRscVueZ7q"
+        },
+        "table": {
+          "__rl": true,
+          "value": "tbl73NABHF7cpldYB",
+          "mode": "list",
+          "cachedResultName": "Agents SMS",
+          "cachedResultUrl": "https://airtable.com/appGTg9zRscVueZ7q/tbl73NABHF7cpldYB"
+        },
+        "filterByFormula": "={phone} = '{{ $json.phone }}'",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.airtable",
+      "typeVersion": 2.1,
+      "position": [
+        1600,
+        528
+      ],
+      "id": "e34f18d6-8dea-4192-92f6-b87d2aff8fa2",
+      "name": "Search records3",
+      "credentials": {
+        "airtableTokenApi": {
+          "id": "BlkmNjoewDVayQOR",
+          "name": "Testing"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "base": {
+          "__rl": true,
+          "value": "appGTg9zRscVueZ7q",
+          "mode": "list",
+          "cachedResultName": "HiRoots",
+          "cachedResultUrl": "https://airtable.com/appGTg9zRscVueZ7q"
+        },
+        "table": {
+          "__rl": true,
+          "value": "tblIVTULdzLxlOVV7",
+          "mode": "list",
+          "cachedResultName": "Leads",
+          "cachedResultUrl": "https://airtable.com/appGTg9zRscVueZ7q/tblIVTULdzLxlOVV7"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "id": "={{ $('Loop Over Items2').item.json.id }}",
+            "Agent Number of Reminders": "={{ $('Loop Over Items2').item.json['Agent Number of Reminders'] + 1}}"
+          },
+          "matchingColumns": [
+            "id"
+          ],
+          "schema": [
+            {
+              "id": "id",
+              "displayName": "id",
+              "required": false,
+              "defaultMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": true,
+              "removed": false
+            },
+            {
+              "id": "ID",
+              "displayName": "ID",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "First Name",
+              "displayName": "First Name",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Last Name",
+              "displayName": "Last Name",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Phone Number",
+              "displayName": "Phone Number",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Email",
+              "displayName": "Email",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Income",
+              "displayName": "Income",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "number",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Credit Score",
+              "displayName": "Credit Score",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "number",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Has Pets",
+              "displayName": "Has Pets",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Selected Property",
+              "displayName": "Selected Property",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Move In Date",
+              "displayName": "Move In Date",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Status",
+              "displayName": "Status",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "options",
+              "options": [
+                {
+                  "name": "Qualified",
+                  "value": "Qualified"
+                },
+                {
+                  "name": "Not Qualified",
+                  "value": "Not Qualified"
+                }
+              ],
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Rejection Reason",
+              "displayName": "Rejection Reason",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "options",
+              "options": [
+                {
+                  "name": "Pets",
+                  "value": "Pets"
+                },
+                {
+                  "name": "Credits",
+                  "value": "Credits"
+                },
+                {
+                  "name": "Income",
+                  "value": "Income"
+                },
+                {
+                  "name": "Availability",
+                  "value": "Availability"
+                },
+                {
+                  "name": "Non",
+                  "value": "Non"
+                }
+              ],
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "LEAD Form URL",
+              "displayName": "LEAD Form URL",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "LEAD Form Submitted?",
+              "displayName": "LEAD Form Submitted?",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "options",
+              "options": [
+                {
+                  "name": "Yes",
+                  "value": "Yes"
+                },
+                {
+                  "name": "No",
+                  "value": "No"
+                }
+              ],
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "LEAD Form Data",
+              "displayName": "LEAD Form Data",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "LEAD Number of Reminders",
+              "displayName": "LEAD Number of Reminders",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "number",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Owner/Tenant Form URL",
+              "displayName": "Owner/Tenant Form URL",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Owner/Tenant Form Submitted?",
+              "displayName": "Owner/Tenant Form Submitted?",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "options",
+              "options": [
+                {
+                  "name": "Yes",
+                  "value": "Yes"
+                },
+                {
+                  "name": "No",
+                  "value": "No"
+                }
+              ],
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Owner/Tenant Form Data",
+              "displayName": "Owner/Tenant Form Data",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Owner/Tenant Number of Reminders",
+              "displayName": "Owner/Tenant Number of Reminders",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "number",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Agent Form URL",
+              "displayName": "Agent Form URL",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Agent Form Submitted?",
+              "displayName": "Agent Form Submitted?",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "options",
+              "options": [
+                {
+                  "name": "Yes",
+                  "value": "Yes"
+                },
+                {
+                  "name": "No",
+                  "value": "No"
+                }
+              ],
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Agent Form Data",
+              "displayName": "Agent Form Data",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Agent Number of Reminders",
+              "displayName": "Agent Number of Reminders",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "number",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Owner/Tenant Name",
+              "displayName": "Owner/Tenant Name",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Owner/Tenant Number",
+              "displayName": "Owner/Tenant Number",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Assigned Agent Number",
+              "displayName": "Assigned Agent Number",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Appointment Booked",
+              "displayName": "Appointment Booked",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "options",
+              "options": [
+                {
+                  "name": "Yes",
+                  "value": "Yes"
+                },
+                {
+                  "name": "No",
+                  "value": "No"
+                }
+              ],
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Last Update",
+              "displayName": "Last Update",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": true,
+              "removed": true
+            },
+            {
+              "id": "Created Time",
+              "displayName": "Created Time",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": true,
+              "removed": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.airtable",
+      "typeVersion": 2.1,
+      "position": [
+        1952,
+        528
+      ],
+      "id": "74dc3e53-88c8-4275-b18a-f7ea08ab280e",
+      "name": "Increment No.of Reminders1",
+      "credentials": {
+        "airtableTokenApi": {
+          "id": "BlkmNjoewDVayQOR",
+          "name": "Testing"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://services.leadconnectorhq.com/conversations/messages",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer pit-c2fc64d0-97c6-4fce-b45b-64dbda835e08"
+            },
+            {
+              "name": "Version",
+              "value": "2021-04-15"
+            },
+            {
+              "name": "Accept",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "type",
+              "value": "SMS"
+            },
+            {
+              "name": "message",
+              "value": "=This is the Reminder No:{{ $('Loop Over Items2').item.json['Agent Number of Reminders'] + 1}} for Showing Agents to fill the below form.\nProperty Address: {{ $('Loop Over Items2').item.json['Selected Property'] }}\nThis is the Form Link for selecting time slots:\n{{ $('Loop Over Items2').item.json['Owner/Tenant Form URL'] }}"
+            },
+            {
+              "name": "contactId",
+              "value": "={{ $json.contact_id }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1776,
+        528
+      ],
+      "id": "bd2eea7e-c98b-4b55-9e7f-b9320409c18d",
+      "name": "Agents Reminder Sent"
+    },
+    {
+      "parameters": {
+        "jsCode": "// For each incoming item, take item.json.output (an array)\n// and return one item per entry: { json: { firstname, phone } }\n\nconst results = [];\n\nfor (const item of items) {\n  const arr = item.json?.output ?? [];\n  if (!Array.isArray(arr)) continue;\n\n  for (const entry of arr) {\n    results.push({ json: entry });\n  }\n}\n\nreturn results;\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1264,
+        528
+      ],
+      "id": "03a0b825-2b4e-494f-b23e-31d5a6e5178a",
+      "name": "Code in JavaScript2"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        1440,
+        528
+      ],
+      "id": "49bba815-cf4f-4acd-a49b-98612e7702a3",
+      "name": "Loop Over Items1"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        448,
+        528
+      ],
+      "id": "17b82a19-1481-48a8-bc21-6e2f347bb836",
+      "name": "Loop Over Items2"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        464,
+        208
+      ],
+      "id": "d50733f9-285e-408e-8a2e-079d1c0b7d9a",
+      "name": "Loop Over Items3"
+    },
+    {
+      "parameters": {
+        "content": "## Owner/Tenant Reminders\n### Every 12 Hours Reminders will be send to Owner/ Tenants If still didn't have submitted the Tally Form.\n### Upto two Reminders will be send.\n",
+        "height": 304,
+        "width": 1184
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -48,
+        96
+      ],
+      "id": "eb198d60-cb3d-44a9-bc69-82e0ed20e1ea",
+      "name": "Sticky Note1"
+    },
+    {
+      "parameters": {
+        "content": "## Showing Agents Reminders\n### Every 3 Hours the Reminders will be send to Showing Agents If none of them have submitted the Tally Form.\n### Upto 8 Reminders will be send.\n",
+        "height": 432,
+        "width": 2160
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -48,
+        416
+      ],
+      "id": "5ca38ed0-874e-404f-8393-a078de7d5dd8",
+      "name": "Sticky Note2"
+    },
+    {
+      "parameters": {
+        "content": "## 5: Reminders and CleanUp",
+        "height": 816,
+        "width": 2192,
+        "color": 4
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -64,
+        48
+      ],
+      "id": "98406d8e-57b9-4ef9-861f-6321ee6a942a",
+      "name": "Sticky Note3"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Get All Forms": {
+      "main": [
+        [
+          {
+            "node": "Split items and get ids",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Split items and get ids": {
+      "main": [
+        [
+          {
+            "node": "keep only > 14 days",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "keep only > 14 days": {
+      "main": [
+        [
+          {
+            "node": "Delete forms > 14 days",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Filter2": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items3",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Search records2": {
+      "main": [
+        [
+          {
+            "node": "Owner/Tenant Reminder Sent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Owner/Tenant Reminder Sent": {
+      "main": [
+        [
+          {
+            "node": "Increment No.of Reminders",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Every Day": {
+      "main": [
+        [
+          {
+            "node": "Get All Forms",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Every 12 Hours": {
+      "main": [
+        [
+          {
+            "node": "Get All Qualified Records",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Every 3 Hours": {
+      "main": [
+        [
+          {
+            "node": "Get All Qualified Records2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get All Qualified Records": {
+      "main": [
+        [
+          {
+            "node": "Filter2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get All Qualified Records2": {
+      "main": [
+        [
+          {
+            "node": "Filter3",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Filter3": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get row(s) in sheet4": {
+      "main": [
+        [
+          {
+            "node": "Get Agents Contact4",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model5": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent5",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Structured Output Parser4": {
+      "ai_outputParser": [
+        [
+          {
+            "node": "AI Agent5",
+            "type": "ai_outputParser",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Agents Contact4": {
+      "main": [
+        [
+          {
+            "node": "AI Agent5",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Search records3": {
+      "main": [
+        [
+          {
+            "node": "Agents Reminder Sent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent5": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Agents Reminder Sent": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript2": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Loop Over Items1": {
+      "main": [
+        [
+          {
+            "node": "Increment No.of Reminders1",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Search records3",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Loop Over Items2": {
+      "main": [
+        [],
+        [
+          {
+            "node": "Get row(s) in sheet4",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Increment No.of Reminders1": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Loop Over Items3": {
+      "main": [
+        [],
+        [
+          {
+            "node": "Search records2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Increment No.of Reminders": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items3",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "82982373-48b9-4dfe-bb2c-dfa4731ac324",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "622d1fdf01a106fef61ea6f07fcf94e60b6be7053c44d93e616af34484dd7f8f"
+  },
+  "id": "KL6FD4BtHEQiqasF",
+  "tags": []
+}

@@ -1,0 +1,1986 @@
+{
+  "name": "3. Agent Form JK",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "forms",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        -192,
+        64
+      ],
+      "id": "7f8bd9e6-7f51-4768-a36e-baaa8bb03488",
+      "name": "Webhook",
+      "webhookId": "58921f0b-d073-4dad-81d4-1fcd51ccc9e2"
+    },
+    {
+      "parameters": {
+        "jsCode": "// n8n Code node (JavaScript)\n\nfunction findFields(root) {\n  if (Array.isArray(root)) {\n    for (const el of root) {\n      const got = findFields(el);\n      if (got) return got;\n    }\n    return null;\n  }\n  if (Array.isArray(root?.body?.data?.fields)) return root.body.data.fields;\n  if (Array.isArray(root?.data?.fields)) return root.data.fields;\n  if (Array.isArray(root?.fields)) return root.fields;\n\n  if (Array.isArray(root?.data)) {\n    for (const el of root.data) {\n      const got = findFields(el);\n      if (got) return got;\n    }\n  }\n\n  for (const k of Object.keys(root || {})) {\n    const v = root[k];\n    if (Array.isArray(v)) {\n      for (const el of v) {\n        const got = findFields(el);\n        if (got) return got;\n      }\n    }\n  }\n  return null;\n}\n\nfunction extractSelectedTexts(fields) {\n  // Works for MULTI_SELECT or CHECKBOXES with options[] + value[]\n  const master = fields.find(\n    f => Array.isArray(f?.options) && Array.isArray(f?.value)\n  );\n\n  if (master) {\n    const idToText = new Map(master.options.map(o => [o.id, o.text]));\n    return (master.value || []).map(id => idToText.get(id)).filter(Boolean);\n  }\n\n  // Fallback for per-option boolean CHECKBOX rows (not expected in this payload)\n  const extras = fields\n    .filter(f => f?.type === 'CHECKBOXES' && f?.value === true)\n    .map(f => {\n      const m = /\\((.+)\\)\\s*$/.exec(f.label || '');\n      return m ? m[1] : null;\n    })\n    .filter(Boolean);\n\n  return extras;\n}\n\nreturn items.map(item => {\n  const fields = findFields(item.json ?? {}) || [];\n  const texts = extractSelectedTexts(fields);\n\n  const out = {};\n  texts.forEach((t, i) => { out[`slot_${i + 1}`] = t; });\n\n  return { json: out };\n});\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        64,
+        144
+      ],
+      "id": "d58859f4-9fa6-4a50-94e3-b6c0b5901a2b",
+      "name": "Code in JavaScript"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Agent can only select 1 time slot.\n\n{{ JSON.stringify($('Code in JavaScript').item.json) }}",
+        "options": {
+          "systemMessage": "=You are tasked with creating a Tally form based on the user's requirements. Use the \"Tally MCP\" tool to create a form where users can select a preferred date and time from a list of options. Ensure the form includes:\n\nA title that reflects the purpose of the form (e.g., \"Aloha, please select your available time to show the property. Mahalo\") (Required).\n\nMultiple date options, each with a corresponding label (e.g., \"Monday, January 15th, 2024, 10am\" and so on) (Required).\n\nAdd 1 field Phone number (Required).\n\nOnce created, return the id of the form you created as output only (Required).\n\nWARNING: DO NOT CREATE ANY EXTRA THINGS, DO NOT add country code."
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 2.2,
+      "position": [
+        800,
+        32
+      ],
+      "id": "28b9ca94-1e1b-49a3-b46c-07b3e8850bb1",
+      "name": "AI Agent"
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "value": "gpt-5",
+          "mode": "list",
+          "cachedResultName": "gpt-5"
+        },
+        "options": {
+          "maxRetries": 20
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        736,
+        176
+      ],
+      "id": "9e0af792-1d4a-4bf4-a5eb-3883e7c81ad9",
+      "name": "OpenAI Chat Model",
+      "credentials": {
+        "openAiApi": {
+          "id": "Ffo6HqGpSX8PJ9pt",
+          "name": "MindShift OpenAI"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.tally.so/webhooks",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer tly-lB7jTJNao8C5x63mC7TSeOy4F1VQEnwr"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"formId\": \"{{ $('AI Agent').item.json.output }}\",\n  \"url\": \"https://automate.mshift.ai/webhook/agent\",\n  \"eventTypes\": [\n    \"FORM_RESPONSE\"\n  ]\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -64,
+        464
+      ],
+      "id": "5f31593b-3ed8-4db5-a73e-94117c90ee8a",
+      "name": "create a webhook"
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "base": {
+          "__rl": true,
+          "value": "appGTg9zRscVueZ7q",
+          "mode": "list",
+          "cachedResultName": "HiRoots",
+          "cachedResultUrl": "https://airtable.com/appGTg9zRscVueZ7q"
+        },
+        "table": {
+          "__rl": true,
+          "value": "tblIVTULdzLxlOVV7",
+          "mode": "list",
+          "cachedResultName": "Leads",
+          "cachedResultUrl": "https://airtable.com/appGTg9zRscVueZ7q/tblIVTULdzLxlOVV7"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Owner/Tenant Number of Reminders": 0,
+            "Owner/Tenant Form URL": "=https://tally.so/r/{{ $json.body.data.formId }}",
+            "Owner/Tenant Form Submitted?": "Yes"
+          },
+          "matchingColumns": [
+            "Owner/Tenant Form URL"
+          ],
+          "schema": [
+            {
+              "id": "id",
+              "displayName": "id",
+              "required": false,
+              "defaultMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": true,
+              "removed": true
+            },
+            {
+              "id": "ID",
+              "displayName": "ID",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "First Name",
+              "displayName": "First Name",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Last Name",
+              "displayName": "Last Name",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Phone Number",
+              "displayName": "Phone Number",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Email",
+              "displayName": "Email",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Income",
+              "displayName": "Income",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "number",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Credit Score",
+              "displayName": "Credit Score",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "number",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Has Pets",
+              "displayName": "Has Pets",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Selected Property",
+              "displayName": "Selected Property",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Move In Date",
+              "displayName": "Move In Date",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Status",
+              "displayName": "Status",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "options",
+              "options": [
+                {
+                  "name": "Qualified",
+                  "value": "Qualified"
+                },
+                {
+                  "name": "Not Qualified",
+                  "value": "Not Qualified"
+                }
+              ],
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Rejection Reason",
+              "displayName": "Rejection Reason",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "options",
+              "options": [
+                {
+                  "name": "Pets",
+                  "value": "Pets"
+                },
+                {
+                  "name": "Credits",
+                  "value": "Credits"
+                },
+                {
+                  "name": "Income",
+                  "value": "Income"
+                },
+                {
+                  "name": "Availability",
+                  "value": "Availability"
+                },
+                {
+                  "name": "Non",
+                  "value": "Non"
+                }
+              ],
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "LEAD Form URL",
+              "displayName": "LEAD Form URL",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "LEAD Form Submitted?",
+              "displayName": "LEAD Form Submitted?",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "options",
+              "options": [
+                {
+                  "name": "Yes",
+                  "value": "Yes"
+                },
+                {
+                  "name": "No",
+                  "value": "No"
+                }
+              ],
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "LEAD Form Data",
+              "displayName": "LEAD Form Data",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "LEAD Number of Reminders",
+              "displayName": "LEAD Number of Reminders",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "number",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Owner/Tenant Form URL",
+              "displayName": "Owner/Tenant Form URL",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Owner/Tenant Form Submitted?",
+              "displayName": "Owner/Tenant Form Submitted?",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "options",
+              "options": [
+                {
+                  "name": "Yes",
+                  "value": "Yes"
+                },
+                {
+                  "name": "No",
+                  "value": "No"
+                }
+              ],
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Owner/Tenant Form Data",
+              "displayName": "Owner/Tenant Form Data",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Owner/Tenant Number of Reminders",
+              "displayName": "Owner/Tenant Number of Reminders",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "number",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Agent Form URL",
+              "displayName": "Agent Form URL",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Agent Form Submitted?",
+              "displayName": "Agent Form Submitted?",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "options",
+              "options": [
+                {
+                  "name": "Yes",
+                  "value": "Yes"
+                },
+                {
+                  "name": "No",
+                  "value": "No"
+                }
+              ],
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Agent Form Data",
+              "displayName": "Agent Form Data",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Agent Number of Reminders",
+              "displayName": "Agent Number of Reminders",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "number",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Owner/Tenant Name",
+              "displayName": "Owner/Tenant Name",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Owner/Tenant Number",
+              "displayName": "Owner/Tenant Number",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Assigned Agent Number",
+              "displayName": "Assigned Agent Number",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Appointment Booked",
+              "displayName": "Appointment Booked",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "options",
+              "options": [
+                {
+                  "name": "Yes",
+                  "value": "Yes"
+                },
+                {
+                  "name": "No",
+                  "value": "No"
+                }
+              ],
+              "readOnly": false,
+              "removed": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.airtable",
+      "typeVersion": 2.1,
+      "position": [
+        64,
+        0
+      ],
+      "id": "b4a33c9c-d9f8-4e79-a933-66401a4573e2",
+      "name": "Form submitted -> Yes",
+      "credentials": {
+        "airtableTokenApi": {
+          "id": "BlkmNjoewDVayQOR",
+          "name": "Testing"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "base": {
+          "__rl": true,
+          "value": "appGTg9zRscVueZ7q",
+          "mode": "list",
+          "cachedResultName": "HiRoots",
+          "cachedResultUrl": "https://airtable.com/appGTg9zRscVueZ7q"
+        },
+        "table": {
+          "__rl": true,
+          "value": "tblIVTULdzLxlOVV7",
+          "mode": "list",
+          "cachedResultName": "Leads",
+          "cachedResultUrl": "https://airtable.com/appGTg9zRscVueZ7q/tblIVTULdzLxlOVV7"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Owner/Tenant Form URL": "=https://tally.so/r/{{ $('Webhook').item.json.body.data.formId }}",
+            "Owner/Tenant Form Data": "={{ JSON.stringify($('Code in JavaScript').item.json) }}",
+            "Owner/Tenant Number of Reminders": 0
+          },
+          "matchingColumns": [
+            "Owner/Tenant Form URL"
+          ],
+          "schema": [
+            {
+              "id": "id",
+              "displayName": "id",
+              "required": false,
+              "defaultMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": true,
+              "removed": true
+            },
+            {
+              "id": "ID",
+              "displayName": "ID",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "First Name",
+              "displayName": "First Name",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Last Name",
+              "displayName": "Last Name",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Phone Number",
+              "displayName": "Phone Number",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Email",
+              "displayName": "Email",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Income",
+              "displayName": "Income",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "number",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Credit Score",
+              "displayName": "Credit Score",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "number",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Has Pets",
+              "displayName": "Has Pets",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Selected Property",
+              "displayName": "Selected Property",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Move In Date",
+              "displayName": "Move In Date",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Status",
+              "displayName": "Status",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "options",
+              "options": [
+                {
+                  "name": "Qualified",
+                  "value": "Qualified"
+                },
+                {
+                  "name": "Not Qualified",
+                  "value": "Not Qualified"
+                }
+              ],
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Rejection Reason",
+              "displayName": "Rejection Reason",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "options",
+              "options": [
+                {
+                  "name": "Pets",
+                  "value": "Pets"
+                },
+                {
+                  "name": "Credits",
+                  "value": "Credits"
+                },
+                {
+                  "name": "Income",
+                  "value": "Income"
+                },
+                {
+                  "name": "Availability",
+                  "value": "Availability"
+                },
+                {
+                  "name": "Non",
+                  "value": "Non"
+                }
+              ],
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "LEAD Form URL",
+              "displayName": "LEAD Form URL",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "LEAD Form Submitted?",
+              "displayName": "LEAD Form Submitted?",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "options",
+              "options": [
+                {
+                  "name": "Yes",
+                  "value": "Yes"
+                },
+                {
+                  "name": "No",
+                  "value": "No"
+                }
+              ],
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "LEAD Form Data",
+              "displayName": "LEAD Form Data",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "LEAD Number of Reminders",
+              "displayName": "LEAD Number of Reminders",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "number",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Owner/Tenant Form URL",
+              "displayName": "Owner/Tenant Form URL",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Owner/Tenant Form Submitted?",
+              "displayName": "Owner/Tenant Form Submitted?",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "options",
+              "options": [
+                {
+                  "name": "Yes",
+                  "value": "Yes"
+                },
+                {
+                  "name": "No",
+                  "value": "No"
+                }
+              ],
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Owner/Tenant Form Data",
+              "displayName": "Owner/Tenant Form Data",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Owner/Tenant Number of Reminders",
+              "displayName": "Owner/Tenant Number of Reminders",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "number",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Agent Form URL",
+              "displayName": "Agent Form URL",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Agent Form Submitted?",
+              "displayName": "Agent Form Submitted?",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "options",
+              "options": [
+                {
+                  "name": "Yes",
+                  "value": "Yes"
+                },
+                {
+                  "name": "No",
+                  "value": "No"
+                }
+              ],
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Agent Form Data",
+              "displayName": "Agent Form Data",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Agent Number of Reminders",
+              "displayName": "Agent Number of Reminders",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "number",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Owner/Tenant Name",
+              "displayName": "Owner/Tenant Name",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Owner/Tenant Number",
+              "displayName": "Owner/Tenant Number",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Assigned Agent Number",
+              "displayName": "Assigned Agent Number",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Appointment Booked",
+              "displayName": "Appointment Booked",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "options",
+              "options": [
+                {
+                  "name": "Yes",
+                  "value": "Yes"
+                },
+                {
+                  "name": "No",
+                  "value": "No"
+                }
+              ],
+              "readOnly": false,
+              "removed": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.airtable",
+      "typeVersion": 2.1,
+      "position": [
+        496,
+        0
+      ],
+      "id": "5da825de-db34-475b-9d9f-7cc0c49a49b8",
+      "name": "Add Form Data",
+      "credentials": {
+        "airtableTokenApi": {
+          "id": "BlkmNjoewDVayQOR",
+          "name": "Testing"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "base": {
+          "__rl": true,
+          "value": "appGTg9zRscVueZ7q",
+          "mode": "list",
+          "cachedResultName": "HiRoots",
+          "cachedResultUrl": "https://airtable.com/appGTg9zRscVueZ7q"
+        },
+        "table": {
+          "__rl": true,
+          "value": "tblIVTULdzLxlOVV7",
+          "mode": "list",
+          "cachedResultName": "Leads",
+          "cachedResultUrl": "https://airtable.com/appGTg9zRscVueZ7q/tblIVTULdzLxlOVV7"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Agent Number of Reminders": 0,
+            "Agent Form Submitted?": "No",
+            "Owner/Tenant Form URL": "=https://tally.so/r/{{ $('Webhook').item.json.body.data.formId }}",
+            "Agent Form URL": "=https://tally.so/r/{{ $json.output }}"
+          },
+          "matchingColumns": [
+            "Owner/Tenant Form URL"
+          ],
+          "schema": [
+            {
+              "id": "id",
+              "displayName": "id",
+              "required": false,
+              "defaultMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": true,
+              "removed": true
+            },
+            {
+              "id": "ID",
+              "displayName": "ID",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "First Name",
+              "displayName": "First Name",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Last Name",
+              "displayName": "Last Name",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Phone Number",
+              "displayName": "Phone Number",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Email",
+              "displayName": "Email",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Income",
+              "displayName": "Income",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "number",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Credit Score",
+              "displayName": "Credit Score",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "number",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Has Pets",
+              "displayName": "Has Pets",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Selected Property",
+              "displayName": "Selected Property",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Move In Date",
+              "displayName": "Move In Date",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Status",
+              "displayName": "Status",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "options",
+              "options": [
+                {
+                  "name": "Qualified",
+                  "value": "Qualified"
+                },
+                {
+                  "name": "Not Qualified",
+                  "value": "Not Qualified"
+                }
+              ],
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Rejection Reason",
+              "displayName": "Rejection Reason",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "options",
+              "options": [
+                {
+                  "name": "Pets",
+                  "value": "Pets"
+                },
+                {
+                  "name": "Credits",
+                  "value": "Credits"
+                },
+                {
+                  "name": "Income",
+                  "value": "Income"
+                },
+                {
+                  "name": "Availability",
+                  "value": "Availability"
+                },
+                {
+                  "name": "Non",
+                  "value": "Non"
+                }
+              ],
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "LEAD Form URL",
+              "displayName": "LEAD Form URL",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "LEAD Form Submitted?",
+              "displayName": "LEAD Form Submitted?",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "options",
+              "options": [
+                {
+                  "name": "Yes",
+                  "value": "Yes"
+                },
+                {
+                  "name": "No",
+                  "value": "No"
+                }
+              ],
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "LEAD Form Data",
+              "displayName": "LEAD Form Data",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "LEAD Number of Reminders",
+              "displayName": "LEAD Number of Reminders",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "number",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Owner/Tenant Form URL",
+              "displayName": "Owner/Tenant Form URL",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Owner/Tenant Form Submitted?",
+              "displayName": "Owner/Tenant Form Submitted?",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "options",
+              "options": [
+                {
+                  "name": "Yes",
+                  "value": "Yes"
+                },
+                {
+                  "name": "No",
+                  "value": "No"
+                }
+              ],
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Owner/Tenant Form Data",
+              "displayName": "Owner/Tenant Form Data",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Owner/Tenant Number of Reminders",
+              "displayName": "Owner/Tenant Number of Reminders",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "number",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Agent Form URL",
+              "displayName": "Agent Form URL",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Agent Form Submitted?",
+              "displayName": "Agent Form Submitted?",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "options",
+              "options": [
+                {
+                  "name": "Yes",
+                  "value": "Yes"
+                },
+                {
+                  "name": "No",
+                  "value": "No"
+                }
+              ],
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Agent Form Data",
+              "displayName": "Agent Form Data",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Agent Number of Reminders",
+              "displayName": "Agent Number of Reminders",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "number",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Owner/Tenant Name",
+              "displayName": "Owner/Tenant Name",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Owner/Tenant Number",
+              "displayName": "Owner/Tenant Number",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Assigned Agent Number",
+              "displayName": "Assigned Agent Number",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Appointment Booked",
+              "displayName": "Appointment Booked",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "options",
+              "options": [
+                {
+                  "name": "Yes",
+                  "value": "Yes"
+                },
+                {
+                  "name": "No",
+                  "value": "No"
+                }
+              ],
+              "readOnly": false,
+              "removed": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.airtable",
+      "typeVersion": 2.1,
+      "position": [
+        -224,
+        464
+      ],
+      "id": "3e6df7f2-8bc5-4ede-b85f-98aeae6516e8",
+      "name": "Create Agent record",
+      "credentials": {
+        "airtableTokenApi": {
+          "id": "BlkmNjoewDVayQOR",
+          "name": "Testing"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "18rDR1m1bZkntndwegrcKgBZCB8RhQnOLBHxTdTDXfS4",
+          "mode": "list",
+          "cachedResultName": "AVAILABLE RENTALS",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/18rDR1m1bZkntndwegrcKgBZCB8RhQnOLBHxTdTDXfS4/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 1418192204,
+          "mode": "list",
+          "cachedResultName": "Current Listings",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/18rDR1m1bZkntndwegrcKgBZCB8RhQnOLBHxTdTDXfS4/edit#gid=1418192204"
+        },
+        "filtersUI": {
+          "values": [
+            {
+              "lookupColumn": "Property Address",
+              "lookupValue": "={{ $('Create Agent record').item.json.fields['Selected Property'] }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        128,
+        464
+      ],
+      "id": "0cd612ec-a45e-4e1a-ace0-0ced5177c4af",
+      "name": "Get row(s) in sheet",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "KohAZaXjXOFH8DGH",
+          "name": "Google Sheets Sean"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "16001601-667a-405c-a045-5811974375d4",
+              "name": "Showing Agents",
+              "value": "={{ $json['Showing Agents'] }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        288,
+        464
+      ],
+      "id": "9cf4c501-37c7-48cd-8713-fd3dd954f8ed",
+      "name": "Get Agents Contact"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://services.leadconnectorhq.com/conversations/messages",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer pit-c2fc64d0-97c6-4fce-b45b-64dbda835e08"
+            },
+            {
+              "name": "Version",
+              "value": "2021-04-15"
+            },
+            {
+              "name": "Accept",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "type",
+              "value": "SMS"
+            },
+            {
+              "name": "message",
+              "value": "=This is the Form Link for selecting time slots.\n{{ $('Create Agent record').item.json.fields['Agent Form URL'] }}"
+            },
+            {
+              "name": "contactId",
+              "value": "={{ $json.contact_id }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1024,
+        464
+      ],
+      "id": "f5b52eaf-b702-42ce-b408-ab002f043188",
+      "name": "Send Tally Link to Agents by SMS"
+    },
+    {
+      "parameters": {
+        "content": "## 1: Tagging\n### Form is Submitted and Human Readable from Data is also stored in Airtable",
+        "height": 384,
+        "width": 656
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        16,
+        -96
+      ],
+      "id": "3e9b1ffe-2f7f-4896-af08-26df4d8168fe",
+      "name": "Sticky Note1"
+    },
+    {
+      "parameters": {
+        "content": "## 2: AI Agent\n### Generate Tally Form for Agents\n",
+        "height": 384,
+        "width": 512
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        688,
+        -96
+      ],
+      "id": "5c73942d-386c-41e0-9d48-87d3911b57eb",
+      "name": "Sticky Note2"
+    },
+    {
+      "parameters": {
+        "content": "## 3: URL and Webhook\n### Store Tally Form URL and also create a Webhook",
+        "height": 480,
+        "width": 336
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -256,
+        304
+      ],
+      "id": "8ddb6751-dd19-4c85-995d-b3db269d67a3",
+      "name": "Sticky Note3"
+    },
+    {
+      "parameters": {
+        "content": "## 0: Trigger\n### This Webhook will trigger when the Owner/Tenant Submit Tally Form",
+        "height": 384,
+        "width": 256
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -256,
+        -96
+      ],
+      "id": "dd2739a5-df29-4a22-b1e4-ea683c9cf0a8",
+      "name": "Sticky Note4"
+    },
+    {
+      "parameters": {
+        "content": "## 4: Sending SMS to Showing Agents\n### 1. Get the Exact record for the Selected Property\n### 2. Get all Showing Agents Contacts\n### 3. process to extract First Name and Number",
+        "height": 480,
+        "width": 1104
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        96,
+        304
+      ],
+      "id": "51dee553-1e20-44d4-90a0-2c877034c51b",
+      "name": "Sticky Note"
+    },
+    {
+      "parameters": {
+        "content": "## 3: Form Generation for Agents",
+        "height": 944,
+        "width": 1488,
+        "color": 4
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -272,
+        -144
+      ],
+      "id": "56c6b2ba-5a8a-40ed-a420-f2b99224e4c1",
+      "name": "Sticky Note6"
+    },
+    {
+      "parameters": {
+        "endpointUrl": "https://api.tally.so/mcp",
+        "serverTransport": "httpStreamable",
+        "authentication": "headerAuth",
+        "include": "selected",
+        "includeTools": [
+          "set_form_title",
+          "update_checkbox",
+          "save_form",
+          "create_new_form",
+          "add_text",
+          "add_choice_question",
+          "add_input_question"
+        ],
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.mcpClientTool",
+      "typeVersion": 1.1,
+      "position": [
+        1040,
+        176
+      ],
+      "id": "6ee840c1-7e7f-4b05-a9b1-86f8b72545c5",
+      "name": "Tally MCP",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "WYeUrBCBcBPv8cKG",
+          "name": "Tally"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Showing Agents: {{ $json['Showing Agents'] }}",
+        "hasOutputParser": true,
+        "options": {
+          "systemMessage": "You are a helpful assistant in Extracting and returning the name and phone number of every showing Agents given as input in structured format.\nImportant: The phone numbers format will be this \"808-218-9054\""
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 2.2,
+      "position": [
+        416,
+        464
+      ],
+      "id": "7a6df111-fca9-4b4b-acdb-c2f07472ca26",
+      "name": "AI Agent1"
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "mode": "list",
+          "value": "gpt-4.1-mini"
+        },
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        400,
+        640
+      ],
+      "id": "56a01c92-6a4e-4ed6-80dd-b9ac2b63fcd1",
+      "name": "OpenAI Chat Model1",
+      "credentials": {
+        "openAiApi": {
+          "id": "Ffo6HqGpSX8PJ9pt",
+          "name": "MindShift OpenAI"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsonSchemaExample": "[\n  {\n\t\"firstname\": \"Jhone\",\n    \"phone\": \"808-218-9054\"\n},\n  {\n\t\"firstname\": \"Jalal\",\n    \"phone\": \"808-218-1234\"\n}\n]"
+      },
+      "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+      "typeVersion": 1.3,
+      "position": [
+        592,
+        640
+      ],
+      "id": "1fbf6154-10dc-4569-a709-44f32b6c31cf",
+      "name": "Structured Output Parser"
+    },
+    {
+      "parameters": {
+        "jsCode": "// For each incoming item, take item.json.output (an array)\n// and return one item per entry: { json: { firstname, phone } }\n\nconst results = [];\n\nfor (const item of items) {\n  const arr = item.json?.output ?? [];\n  if (!Array.isArray(arr)) continue;\n\n  for (const entry of arr) {\n    results.push({ json: entry });\n  }\n}\n\nreturn results;\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        688,
+        464
+      ],
+      "id": "ffcf70fd-0b42-4178-95e8-9bfca5428c51",
+      "name": "Code in JavaScript2"
+    },
+    {
+      "parameters": {
+        "operation": "search",
+        "base": {
+          "__rl": true,
+          "value": "appGTg9zRscVueZ7q",
+          "mode": "list",
+          "cachedResultName": "HiRoots",
+          "cachedResultUrl": "https://airtable.com/appGTg9zRscVueZ7q"
+        },
+        "table": {
+          "__rl": true,
+          "value": "tbl73NABHF7cpldYB",
+          "mode": "list",
+          "cachedResultName": "Agents SMS",
+          "cachedResultUrl": "https://airtable.com/appGTg9zRscVueZ7q/tbl73NABHF7cpldYB"
+        },
+        "filterByFormula": "={phone} = '{{ $json.phone }}'",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.airtable",
+      "typeVersion": 2.1,
+      "position": [
+        848,
+        464
+      ],
+      "id": "31a1a751-e984-43d5-81b5-1580b075595a",
+      "name": "Search Agents SMS",
+      "credentials": {
+        "airtableTokenApi": {
+          "id": "BlkmNjoewDVayQOR",
+          "name": "Testing"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "DELETE",
+        "url": "=https://api.tally.so/forms/{{ $('Webhook').item.json.body.data.formId }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer tly-lB7jTJNao8C5x63mC7TSeOy4F1VQEnwr"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        272,
+        0
+      ],
+      "id": "ef6a7dcf-b408-4c4b-93f3-af477dd58cf9",
+      "name": "Delete form"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Form submitted -> Yes",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Code in JavaScript",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript": {
+      "main": [
+        [
+          {
+            "node": "Add Form Data",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent": {
+      "main": [
+        [
+          {
+            "node": "Create Agent record",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create Agent record": {
+      "main": [
+        [
+          {
+            "node": "create a webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "create a webhook": {
+      "main": [
+        [
+          {
+            "node": "Get row(s) in sheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get row(s) in sheet": {
+      "main": [
+        [
+          {
+            "node": "Get Agents Contact",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Agents Contact": {
+      "main": [
+        [
+          {
+            "node": "AI Agent1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send Tally Link to Agents by SMS": {
+      "main": [
+        []
+      ]
+    },
+    "Tally MCP": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model1": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent1",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Structured Output Parser": {
+      "ai_outputParser": [
+        [
+          {
+            "node": "AI Agent1",
+            "type": "ai_outputParser",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent1": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript2": {
+      "main": [
+        [
+          {
+            "node": "Search Agents SMS",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Form submitted -> Yes": {
+      "main": [
+        [
+          {
+            "node": "Delete form",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Search Agents SMS": {
+      "main": [
+        [
+          {
+            "node": "Send Tally Link to Agents by SMS",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "callerPolicy": "workflowsFromSameOwner",
+    "errorWorkflow": "E1zHTy7QMqf0B1Yp"
+  },
+  "versionId": "74c7c036-f1b0-448e-9fad-e89b4e19390e",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "622d1fdf01a106fef61ea6f07fcf94e60b6be7053c44d93e616af34484dd7f8f"
+  },
+  "id": "LYqrsrzhgiYBQJP7",
+  "tags": []
+}

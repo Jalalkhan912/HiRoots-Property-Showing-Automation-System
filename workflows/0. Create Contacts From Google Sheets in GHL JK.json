@@ -1,0 +1,507 @@
+{
+  "name": "0. Create Contacts From Google Sheets in GHL JK",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {}
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        -432,
+        1088
+      ],
+      "id": "d905794e-6c71-42ce-bf21-5ff511fae6de",
+      "name": "Schedule Trigger"
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "18rDR1m1bZkntndwegrcKgBZCB8RhQnOLBHxTdTDXfS4",
+          "mode": "list",
+          "cachedResultName": "AVAILABLE RENTALS",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/18rDR1m1bZkntndwegrcKgBZCB8RhQnOLBHxTdTDXfS4/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 1418192204,
+          "mode": "list",
+          "cachedResultName": "Current Listings",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/18rDR1m1bZkntndwegrcKgBZCB8RhQnOLBHxTdTDXfS4/edit#gid=1418192204"
+        },
+        "filtersUI": {
+          "values": [
+            {
+              "lookupColumn": "Listing Status",
+              "lookupValue": "ACTIVE"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        -224,
+        1088
+      ],
+      "id": "9a4a949c-ae55-4d05-84c4-bd973d2a8193",
+      "name": "Get row(s) in sheet",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "KohAZaXjXOFH8DGH",
+          "name": "Google Sheets Sean"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "e86fd299-eb36-4a0a-8904-02116f60ac29",
+              "name": "Property Address",
+              "value": "={{ $json['Property Address'] }}",
+              "type": "string"
+            },
+            {
+              "id": "35188f9c-fd5b-4f2f-973c-e81d2e8d9e88",
+              "name": "Occupancy Contact",
+              "value": "={{ $json['Occupancy Contact'] }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        224,
+        1088
+      ],
+      "id": "54a79a7a-b541-40d3-8cab-35bdffc017cd",
+      "name": "Edit Fields"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Property Address: {{ $json['Property Address'] }}\nOccupancy Contacts: {{ $json['Occupancy Contact'] }}",
+        "options": {
+          "systemMessage": "For each input, there may be one or more occupancy contacts associated with a property.\nYour task applies only to the first contact (person) listed for each property.\n\nCreate the contact in GoHighLevel (GHL).\n\nCreate or update the same contact in Airtable, using the contact_id returned from GHL.\n\nWhen creating or updating contacts in Airtable, preserve the phone number format exactly as provided (do not alter spacing, symbols, or formatting).\n\nEmail format for GHL contacts:\nowner_or_tenantName.phoneNumber@example.com\n\nDo not include parentheses or spaces.\n\nReplace any spaces with underscores (_)."
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 2.2,
+      "position": [
+        640,
+        1024
+      ],
+      "id": "351de7e5-83a4-4e1c-9161-cc089fe8de3d",
+      "name": "AI Agent2",
+      "retryOnFail": true
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        432,
+        1024
+      ],
+      "id": "48c70154-f586-4642-9674-58d6bc8925e2",
+      "name": "Loop Over Items"
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "value": "gpt-4.1",
+          "mode": "list",
+          "cachedResultName": "gpt-4.1"
+        },
+        "options": {
+          "maxRetries": 30
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        448,
+        1184
+      ],
+      "id": "6c800610-1ada-420e-a981-7ad0ac990520",
+      "name": "OpenAI Chat Model2",
+      "credentials": {
+        "openAiApi": {
+          "id": "Ffo6HqGpSX8PJ9pt",
+          "name": "MindShift OpenAI"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "descriptionType": "manual",
+        "toolDescription": "Create or update a contact in GHL",
+        "email": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Email', `here will be email this will be in format like \"owner/tenant_name.phone_no@example.com\"`, 'string') }}",
+        "phone": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Phone', `agent phone number will go here.`, 'string') }}",
+        "additionalFields": {
+          "firstName": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('First_Name', `use the first name of owner/tenant here.`, 'string') }}",
+          "tags": "owner/Tenant"
+        },
+        "requestOptions": {}
+      },
+      "type": "n8n-nodes-base.highLevelTool",
+      "typeVersion": 2,
+      "position": [
+        624,
+        1184
+      ],
+      "id": "6f82b755-d47b-4821-8b90-b2aa5c4d1be2",
+      "name": "Create or update a contact in GHL1",
+      "credentials": {
+        "highLevelOAuth2Api": {
+          "id": "tBb8hHPvEcnlSpUE",
+          "name": "HighLevel HiRoots"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "upsert",
+        "base": {
+          "__rl": true,
+          "value": "appGTg9zRscVueZ7q",
+          "mode": "list",
+          "cachedResultName": "HiRoots",
+          "cachedResultUrl": "https://airtable.com/appGTg9zRscVueZ7q"
+        },
+        "table": {
+          "__rl": true,
+          "value": "tbl7IQ2nKJa8x1fTx",
+          "mode": "list",
+          "cachedResultName": "owners/tenants",
+          "cachedResultUrl": "https://airtable.com/appGTg9zRscVueZ7q/tbl7IQ2nKJa8x1fTx"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Name": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Name', `Agent name will be here`, 'string') }}",
+            "phone": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('phone', `agent phone number will be here.`, 'string') }}",
+            "contact_id": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('contact_id__using_to_match_', `here use the contact_id of agent when its contact is created in GHL.`, 'string') }}"
+          },
+          "matchingColumns": [
+            "contact_id"
+          ],
+          "schema": [
+            {
+              "id": "id",
+              "displayName": "id",
+              "required": false,
+              "defaultMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": true,
+              "removed": true
+            },
+            {
+              "id": "Name",
+              "displayName": "Name",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "phone",
+              "displayName": "phone",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "contact_id",
+              "displayName": "contact_id",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.airtableTool",
+      "typeVersion": 2.1,
+      "position": [
+        800,
+        1184
+      ],
+      "id": "f89bd472-0609-4a01-b0da-f1610fa34cd0",
+      "name": "Create or update a contact in airtable",
+      "credentials": {
+        "airtableTokenApi": {
+          "id": "BlkmNjoewDVayQOR",
+          "name": "Testing"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "content": "## 0: Trigger Every Day",
+        "height": 384,
+        "width": 192
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -480,
+        944
+      ],
+      "id": "7887733a-88e0-40f7-99ca-bc9fd2029e80",
+      "name": "Sticky Note2"
+    },
+    {
+      "parameters": {
+        "content": "## 1: Get All Properties with Status of Active",
+        "height": 384,
+        "width": 208
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -272,
+        944
+      ],
+      "id": "8cbf24b3-1882-4717-bf48-b9f43c155134",
+      "name": "Sticky Note3"
+    },
+    {
+      "parameters": {
+        "content": "## 2: Property Address and Occupancy Contact",
+        "height": 384,
+        "width": 208
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        176,
+        944
+      ],
+      "id": "503fafe4-987e-46a9-985b-40510b9c447c",
+      "name": "Sticky Note4"
+    },
+    {
+      "parameters": {
+        "content": "## 3: Loop over Items -> Create contact in GHL -> get Contact_id -> store in Air Table",
+        "height": 384,
+        "width": 576
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        400,
+        944
+      ],
+      "id": "bffe80f8-cd7f-46c5-80af-5150df246434",
+      "name": "Sticky Note5"
+    },
+    {
+      "parameters": {
+        "content": "## 0: Creating Owner/Tenants Contacts in GHL and Airtable",
+        "height": 448,
+        "width": 1488,
+        "color": 4
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -496,
+        896
+      ],
+      "id": "ee142007-93a3-4f1d-a941-e1d02dd1e107",
+      "name": "Sticky Note6"
+    },
+    {
+      "parameters": {
+        "content": "## 1.1: Remove Vacant",
+        "height": 384,
+        "width": 208
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -48,
+        944
+      ],
+      "id": "dcd23d66-f15b-4188-ab91-7f6dc68686b0",
+      "name": "Sticky Note"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "9548c6a0-c7ed-4e8c-af81-f1cd390d1cf2",
+              "leftValue": "={{ $json.Occupancy }}",
+              "rightValue": "Vacant",
+              "operator": {
+                "type": "string",
+                "operation": "notEquals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.filter",
+      "typeVersion": 2.2,
+      "position": [
+        0,
+        1088
+      ],
+      "id": "deb7ca45-52dd-4edb-9d09-80cf7b66251d",
+      "name": "Filter"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "Get row(s) in sheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get row(s) in sheet": {
+      "main": [
+        [
+          {
+            "node": "Filter",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Loop Over Items": {
+      "main": [
+        [],
+        [
+          {
+            "node": "AI Agent2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model2": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent2",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create or update a contact in GHL1": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent2",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent2": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create or update a contact in airtable": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent2",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Filter": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "5e2b5137-8c31-4a67-b9f9-77a59cc9ec3b",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "622d1fdf01a106fef61ea6f07fcf94e60b6be7053c44d93e616af34484dd7f8f"
+  },
+  "id": "Tnlq3HJVxIXqAvFs",
+  "tags": []
+}

@@ -56,6 +56,36 @@ This automation system handles the complete workflow of scheduling property show
    - Agents: 8 reminders (every 3 hours)
    - Deletes Tally forms older than 14 days
 
+## 📸 Workflow Visualizations
+
+### Workflow 0: Contact Synchronization
+![Contact Sync Workflow](./images/workflow-0-contacts-sync.png)
+*Daily sync of property owner/tenant contacts from Google Sheets to GHL and Airtable*
+
+### Workflow 1: Lead Qualification System
+![Lead Qualification Workflow](./images/workflow-1-lead-qualification.png)
+*AI-powered lead qualification with dynamic form generation based on property status*
+
+### Workflow 2: Owner/Tenant Availability Forms
+![Owner/Tenant Forms Workflow](./images/workflow-2-owner-tenant-forms.png)
+*Collects availability from property owners/tenants and triggers agent coordination*
+
+### Workflow 3: Agent Form Distribution
+![Agent Forms Workflow](./images/workflow-3-agent-forms.png)
+*Distributes availability forms to all showing agents for occupied properties*
+
+### Workflow 3b: Vacant Property Agent Forms
+![Vacant Property Workflow](./images/workflow-3b-vacant-property.png)
+*Streamlined agent scheduling for vacant properties (bypasses owner/tenant step)*
+
+### Workflow 4: Race Condition Handler & Booking
+![Race Condition Workflow](./images/workflow-4-race-condition.png)
+*Manages concurrent agent responses, books appointments, and notifies all parties*
+
+### Workflow 5: Reminders & Cleanup
+![Reminders & Cleanup Workflow](./images/workflow-5-reminders-cleanup.png)
+*Automated reminder system and form cleanup for optimal system maintenance*
+
 ## 🔧 Technology Stack
 
 - **n8n** - Workflow automation platform

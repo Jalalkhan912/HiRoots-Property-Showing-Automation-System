@@ -96,8 +96,8 @@ Set up the following credentials in n8n:
 - Configure for tables: Leads, Agents SMS, owners/tenants
 
 **GoHighLevel OAuth2**
-- Location ID: `8udIceOSIiHK8IpIwqOp`
-- Calendar ID: `KnKxoxDi5aBCz3keJJH6`
+- Location ID: `**********************`
+- Calendar ID: `**********************`
 
 **Tally API**
 - API Key for form generation and webhook management
